@@ -8,7 +8,9 @@ import numpy as np
 from queue import Queue
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
+from PyQt5.Qt import Qt
 from PyQt5 import QtCore as qtc
+from PyQt5 import QtWidgets
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, \
@@ -42,7 +44,6 @@ class MplCanvas(FigureCanvasQTAgg):
         self.figs.tight_layout()
         # self.axes = self.fig.add_subplot(111)
         super(MplCanvas, self).__init__(self.fig)
-
 
 class MplCanvasFAS(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -89,19 +90,17 @@ class FASWindow(QWidget):
     will appear as a free-floating window as we want.
     """
     submit_clicked_spectrogram_to_gui = qtc.pyqtSignal(str)
+    submit_event_spectrogram_to_gui = qtc.pyqtSignal(str, str)
 
     def __init__(self):
         super().__init__()
+
+        self.spectrogram_window = None
         self.setWindowTitle('Fourier Amplitude Spectra')
-        # self.label = QLabel("Reading all files in directory ...")
-        self.setGeometry(20, 20, 600, 600)
+        self.setGeometry(20, 20, 850, 750)
         self.canvas_FAS = MplCanvasFAS(self, width=5, height=4, dpi=100)
-        # self.cid = self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.onclick)
-        # self.cid = self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.keyPressEvent)
         self.cid = self.canvas_FAS.figs_FAS.canvas.mpl_connect(
             "motion_notify_event", self.on_move)
-        # plt.gcf().canvas.mpl_connect('pick_event', self.onclick_del)
-        # self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.onclick)
 
         self.canvas_FAS.axes_FAS[0].plot([], [])
         self.canvas_FAS.axes_FAS[1].plot([], [])
@@ -120,7 +119,6 @@ class FASWindow(QWidget):
         self.pybutton_show_spectrogram.move(50, 50)
         self.pybutton_show_spectrogram.clicked.connect(
             self.fun_show_spectrogram)
-
         FAS_upper_layout.addWidget(toolbar_FAS)
         FAS_upper_layout.addStretch()
         FAS_upper_layout.addWidget(self.pybutton_show_spectrogram)
@@ -140,13 +138,16 @@ class FASWindow(QWidget):
         y_pom = event.ydata
 
     def fun_show_spectrogram(self):
-        self.spectogram_window = SpectrogramWindow()
-        self.spectogram_window.show()
-        self.spectogram_window.submit_clicked_spectrogram_to_fas.connect(
+        self.spectrogram_window = SpectrogramWindow()
+        self.spectrogram_window.show()
+        self.spectrogram_window.submit_clicked_spectrogram_to_fas.connect(
             self.connect_fas_spectrogram_gui)
-
+        self.spectrogram_window.submit_event_spectrogram_to_fas.connect(
+            self.connect_fas_spectrogram_gui_event)
     def connect_fas_spectrogram_gui(self, channel):
         self.submit_clicked_spectrogram_to_gui.emit(channel)
+    def connect_fas_spectrogram_gui_event(self, str_phase, value):
+        self.submit_event_spectrogram_to_gui.emit(str_phase, value)
 
 
 class SpectrogramWindow(QWidget):
@@ -155,19 +156,16 @@ class SpectrogramWindow(QWidget):
     will appear as a free-floating window as we want.
     """
     submit_clicked_spectrogram_to_fas = qtc.pyqtSignal(str)
-
+    submit_event_spectrogram_to_fas = qtc.pyqtSignal(str, str)
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Spectrogram')
         self.setGeometry(20, 20, 850, 650)
         self.canvas_spectrogram = MplCanvas_Spectrogram(self, width=5,
                                                         height=4, dpi=100)
-        # self.cid = self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.onclick)
-        # self.cid = self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.keyPressEvent)
         self.cid = self.canvas_spectrogram.fig_spectrogram.canvas.mpl_connect(
             "motion_notify_event", self.on_move)
-        # plt.gcf().canvas.mpl_connect('pick_event', self.onclick_del)
-        # self.sc2.figs_New_Wind.canvas.mpl_connect('key_press_event', self.onclick)
+        plt.gcf().canvas.mpl_connect('pick_event', self.mouse_press_event)
         self.canvas_spectrogram.axes_spectrogram[0].plot([], [])
         self.canvas_spectrogram.axes_spectrogram[1].plot([], [])
         toolbar_spectrogram = NavigationToolbar(self.canvas_spectrogram, self)
@@ -201,9 +199,35 @@ class SpectrogramWindow(QWidget):
         self.submit_clicked_spectrogram_to_fas.emit(selected_channel)
 
     def on_move(self, event):
-        x_pom = event.xdata
-        y_pom = event.ydata
+        self.x_mouse_location = event.xdata
+        self.y_mouse_location = event.ydata
 
+    def keyPressEvent(self, event):
+        modifiers = QApplication.keyboardModifiers()
+
+        if modifiers & Qt.ControlModifier:
+            print('str(event)')
+            if event.key() == Qt.Key_S and self.x_mouse_location is not None:
+                print("Ctrl + S")
+                self.submit_event_spectrogram_to_fas.emit(
+                    'S_phase_draw', str(self.x_mouse_location))
+            elif event.key() == Qt.Key_D and self.x_mouse_location is not None:
+                print("Ctrl + D")
+                self.submit_event_spectrogram_to_fas.emit(
+                    'P_phase_draw', str(self.x_mouse_location))
+            elif event.key() == Qt.Key_E:
+                print("Ctrl + E")
+                print(self.y_mouse_location)
+
+    def mouse_press_event(self, event):
+        print(event)
+        if event.mouseevent.button == 2:
+            this_line = event.artist
+            value_of_deleted_line = this_line._x[0]
+            print(value_of_deleted_line)
+
+            self.submit_event_spectrogram_to_fas.emit(
+                'Phase_delete', str(value_of_deleted_line))
 
 class Gui(QMainWindow):
 
@@ -219,32 +243,52 @@ class Gui(QMainWindow):
         self.height = 15000
         self.window_loading = None
         self.window_FAS = None
+        self.abscissa_FAS_log = True
+        self.ordinate_FAS_log = False
+        self.spec_canvas = None
+        self.grid_dummy = True
+        self.grid_FAS_dummy = True
+
+        self.P_phase_time = 0
+        self.S_phase_time = 0
+        self.list_lines_P_phase = []
+        self.list_lines_S_phase = []
 
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
 
         self.main_layout = QHBoxLayout(self)
         self.right_layout = QVBoxLayout(self)
+        self.right_layout_upper = QHBoxLayout(self)
         self.left_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(1, 35, 1, 1)
+        self.phases_layout_P = QVBoxLayout(self)
+        self.phases_layout_S = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(1, 0, 1, 1)
         self.main_widget = QWidget()
         self.widget_left = QWidget()
+        self.widget_right = QWidget()
+        self.widget_right_upper = QWidget()
+        self.phases_widget_P = QWidget()
+        self.phases_widget_S = QWidget()
         # self.widget_left.setMaximumSize(450, 500)
         self.widget_left.setFixedSize(450, 500)
-        self.widget_right = QWidget()
-        self.widget_right.setMinimumSize(900, 600)
+        self.widget_right.setMinimumSize(900, 900)
         self.create_table()
 
         self.fig_canvas = MplCanvas(self, width=5, height=4, dpi=100)
-        # self.cid = self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
-        #                                             self.onclick)
-        # self.cid = self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
-        #                                             self.keyPressEvent)
-        # self.cid = self.fig_canvas.figs.canvas.mpl_connect("motion_notify_event",
-        #                                             self.on_move)
-        # plt.gcf().canvas.mpl_connect('pick_event', self.onclick_del)
+        self.cid = self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
+                                                           self.on_click)
+        self.cid = self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
+                                                           self.keyPressEvent)
+        #self.cid = self.fig_canvas.figs.canvas.mpl_connect('button_press_event',
+        #                                                   self.mousePressEvent)
+        plt.gcf().canvas.mpl_connect('pick_event', self.mouse_press_event)
+        self.cid = self.fig_canvas.figs.canvas.mpl_connect(
+            "motion_notify_event", self.on_move)
+        # self.fig_canvas.figs.canvas.mpl_connect('pick_event', self.on_click_del)
+        # self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
+        #                                         self.on_click)
 
-        # self.fig_canvas.figs.canvas.mpl_connect('key_press_event', self.onclick)
 
         self.fig_canvas.axes[0].plot([], [])
         self.fig_canvas.axes[1].plot([], [])
@@ -253,8 +297,44 @@ class Gui(QMainWindow):
         self.toolbar_fig = NavigationToolbar(self.fig_canvas, self)
         self.toolbar = QToolBar("My main toolbar")
 
-        self.right_layout.addWidget(self.toolbar_fig)
-        self.right_layout.addWidget(self.fig_canvas)
+        self.P_QLabel = QLabel(self)
+        self.P_QLabel.setText('P phase:')
+        self.P_QLabel.setFixedWidth(65)
+        self.P_QLineEdit = QLineEdit(self)
+        self.P_QLineEdit.setFixedWidth(180)
+        self.P_QLineEdit.setText(str(0))
+
+        self.S_QLabel = QLabel(self)
+        self.S_QLabel.setText('S phase:')
+        self.S_QLabel.setFixedWidth(65)
+        self.S_QLineEdit = QLineEdit(self)
+        self.S_QLineEdit.setFixedWidth(180)
+        self.S_QLineEdit.setText(str(0))
+
+        self.phases_layout_P.addWidget(self.P_QLabel)
+        self.phases_layout_P.addWidget(self.P_QLineEdit)
+        self.phases_widget_P.setSizePolicy(QSizePolicy.Expanding,
+                                           QSizePolicy.Minimum)
+        self.phases_layout_S.addWidget(self.S_QLabel)
+        self.phases_layout_S.addWidget(self.S_QLineEdit)
+        self.phases_widget_P.setSizePolicy(QSizePolicy.Expanding,
+                                           QSizePolicy.Minimum)
+
+        self.phases_widget_P.setLayout(self.phases_layout_P)
+        self.phases_widget_S.setLayout(self.phases_layout_S)
+        self.right_layout_upper.addWidget(self.toolbar_fig)
+        self.right_layout_upper.addStretch()
+        self.right_layout_upper.addWidget(self.phases_widget_P)
+        self.right_layout_upper.addWidget(self.phases_widget_S)
+        self.right_layout_upper.setContentsMargins(0, 0, 0, 0)
+        self.right_layout_upper.setSizeConstraint(1)
+        self.widget_right_upper.setSizePolicy(QSizePolicy.Expanding,
+                                              QSizePolicy.Minimum)
+        self.widget_right_upper.setLayout(self.right_layout_upper)
+
+        self.widget_right_upper.setMaximumSize(900, 75)
+        self.right_layout.addWidget(self.widget_right_upper)
+        self.right_layout.addWidget(self.fig_canvas, stretch=20)
 
         self._background_reader_thread = threading.Thread(
             target=self._bg_reading_function)
@@ -263,13 +343,25 @@ class Gui(QMainWindow):
         self.left_layout.addWidget(self.tableWidget)
         self.left_layout.addStretch()
         self.widget_left.setLayout(self.left_layout)
+        self.right_layout.setContentsMargins(0, 0, 10, 10)
         self.widget_right.setLayout(self.right_layout)
+
+        self.fig_canvas.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.fig_canvas_grid = QtWidgets.QAction('Toggle grid', self)
+        self.fig_canvas_grid.triggered.connect(self.fig_canvas_grid_on_off)
+        # self.ordinate_scale = QtWidgets.QAction("Change Y scale", self)
+        # self.ordinate_scale.triggered.connect(self.change_ordinate_scale)
+        self.fig_canvas.addAction(self.fig_canvas_grid)
+        #self.fig_canvas.addAction(self.ordinate_scale)
+
         self.main_layout.addWidget(self.widget_left)
         self.main_layout.addWidget(self.widget_right)
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
         self.menu_main = QMenuBar(self)
+        self.menu_main.setGeometry(0, 0, 150, 20)
+        self.menu_main.setContentsMargins(0, 0, 0, 0)
         self.menu_files = self.menu_main.addMenu("&Files")
         read_file = QAction('Read file', self)
         read_file.triggered.connect(self.fun_read_file)
@@ -280,7 +372,6 @@ class Gui(QMainWindow):
         self.menu_files.addAction(read_batch)
         self.menu_data = self.menu_main.addMenu("&Data")
         open_map = QAction('Map selection', self)
-        # open_map.triggered.connect(self.show_new_window_MAP)
         self.menu_data.addAction(open_map)
         self.show()
         self.window_FAS = FASWindow()
@@ -330,7 +421,7 @@ class Gui(QMainWindow):
             msg = self.back_to_front_queue.get()
 
             if msg['Action'] == 'Loaded traces':
-                #print(msg)
+                # print(msg)
                 self.update_table(msg['Data'])
                 if self.window_loading.isVisible():
                     print('Close')
@@ -345,23 +436,20 @@ class Gui(QMainWindow):
             elif msg['Action'] == 'Draw record obspy':
                 self.plot_data(msg['Data'], msg['Periods'], msg['Channels'])
             elif msg['Action'] == 'DrawFAS':
-                self.plot_data_FAS(msg['DataX'], msg['DataY'])
+                self.plot_data_FAS(msg['DataX'], msg['DataTime'])
             elif msg['Action'] == 'DrawSpectrogram':
-                self.plot_spectrogram_data(msg['DataFreq'], msg['DataY'],
+                self.plot_spectrogram_data(msg['DataFreq'], msg['DataTime'],
                                            msg['Amplitude'], msg['Frequency'])
 
     def contextMenuEventTable(self, point):
         contextMenu = QMenu(self)
         load_file = contextMenu.addAction("Draw file")
         load_file_FAS = contextMenu.addAction("Calculate FAS")
-        # quitAct = contextMenu.addAction("Quit")
-        # action = contextMenu.exec_(self.mapToGlobal(event.pos()))
-        action = contextMenu.exec_(
-            self.tableWidget.mapToGlobal(point))
+        action = contextMenu.exec_(self.tableWidget.mapToGlobal(point))
         if action == load_file:
             selected_row = self.tableWidget.selectedItems()
             selected_record = selected_row[0].text()
-            self.recoed_name = selected_row[0].text()
+            self.record_name = selected_row[0].text()
             print(selected_record)
 
             if selected_record.lower().endswith('.txt'):
@@ -380,26 +468,18 @@ class Gui(QMainWindow):
         elif action == load_file_FAS:
             selected_row = self.tableWidget.selectedItems()
             selected_record = selected_row[0].text()
-            self.recoed_name = selected_row[0].text()
+            self.record_name = selected_row[0].text()
             print(selected_record)
-            dummy_plot = []
 
-            # for i in range(3):
-            #     try:
-            #         lines = self.fig_canvas.axes[i].lines
-            #         data = lines[0].get_data()[0]
-            #         dummy_plot = [True]
-            #     except IndexError:
-            #         dummy_plot = [False]
             try:
                 if selected_record != self.fig_canvas.figs._suptitle.get_text():
-                    dummy_plot = [True]
+                    dummy_plot = True
                 else:
-                    dummy_plot = [False]
+                    dummy_plot = False
             except AttributeError:
-                dummy_plot = [True]
+                dummy_plot = True
 
-            if any(dummy_plot):
+            if dummy_plot:
                 if selected_record.lower().endswith('.txt'):
                     send_back = {'Action': 'OpenRecord', 'Extension': '.txt',
                                  'RecordPath': selected_record}
@@ -415,9 +495,7 @@ class Gui(QMainWindow):
                     self.front_to_back_queue.put(send_back)
 
             time.sleep(0.25)
-            print('Fas started0')
             self.data_for_FAS()
-            print('Fas ended0')
 
     def create_table(self):
         # Create table
@@ -434,6 +512,7 @@ class Gui(QMainWindow):
         self.tableWidget.setColumnWidth(1, 75)
         self.tableWidget.setColumnWidth(2, 75)
         self.tableWidget.setColumnWidth(3, 100)
+        self.tableWidget.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         # self.tableWidget.setFixedHeight(500)
         # self.tableWidget.setFixedWidth(600)
 
@@ -445,6 +524,7 @@ class Gui(QMainWindow):
             self.tableWidget.setRowCount(data.shape[0])
             for i in range(len(data)):
                 table_item0 = QTableWidgetItem(data[i, 0])
+                # table_item0.setFlags(qtc.Qt.ItemIsEnabled)
                 self.tableWidget.setItem(i, 0, table_item0)
 
                 table_item1 = QTableWidgetItem(data[i, 1])
@@ -469,18 +549,44 @@ class Gui(QMainWindow):
         self.tableWidget.setColumnWidth(1, 75)
         self.tableWidget.setColumnWidth(2, 100)
         self.tableWidget.resizeRowsToContents()
+        self.tableWidget.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         if data.shape[0] > 6:
             self.widget_left.setFixedSize(450, 1000)
             self.tableWidget.setFixedHeight(900)
 
+        selected_record = self.tableWidget.item(0, 0).text()
+        self.record_name = selected_record
+        print(selected_record)
+
+        if selected_record.lower().endswith('.txt'):
+            send_back = {'Action': 'OpenRecord', 'Extension': '.txt',
+                         'RecordPath': selected_record}
+            self.front_to_back_queue.put(send_back)
+        elif selected_record.lower().endswith('.v1'):
+            send_back = {'Action': 'OpenRecord', 'Extension': '.v1',
+                         'RecordPath': selected_record}
+            self.front_to_back_queue.put(send_back)
+        else:
+            send_back = {'Action': 'OpenRecord', 'Extension': 'obspy',
+                         'RecordPath': selected_record}
+            self.front_to_back_queue.put(send_back)
+
     def plot_data(self, ordinate, period_all, channels):
+        self.p_phase = None
+        self.s_phase = None
+
+        self.P_phase_time = 0
+        self.S_phase_time = 0
+        self.P_QLineEdit.setText(str(self.P_phase_time))
+        self.S_QLineEdit.setText(str(self.P_phase_time))
+
         self.fig_canvas.axes[0].clear()
         self.fig_canvas.axes[1].clear()
         self.fig_canvas.axes[2].clear()
-        #period = float(period_all)
+        self.list_ind_plot = []
+
         for i in range(len(ordinate)):
             period = float(period_all[i])
-            print(period)
             ordinate_float = np.array(ordinate[i], dtype=np.float64)
             if channels[i].find('1') != -1 or channels[i].lower().find(
                     'n') != -1:
@@ -491,6 +597,7 @@ class Gui(QMainWindow):
             elif channels[i].find('3') != -1 or channels[i].lower().find(
                     'z') != -1:
                 ind_plot = 2
+            self.list_ind_plot += [ind_plot]
 
             self.fig_canvas.axes[ind_plot].plot(
                 np.arange(0, len(ordinate_float) * period, period),
@@ -500,14 +607,12 @@ class Gui(QMainWindow):
                 'Time [s]')
             self.fig_canvas.axes[ind_plot].set_ylabel('Amplitude')
 
-        self.fig_canvas.figs.suptitle(self.recoed_name, x=0.5, y=0.995)
+        self.fig_canvas.figs.suptitle(self.record_name, x=0.5, y=0.995)
         self.fig_canvas.figs.tight_layout()
         self.fig_canvas.figs.canvas.draw()
 
         if self.window_FAS.isVisible():
-            print('Fas started')
             self.data_for_FAS()
-            print('Fas ended')
 
     def draw_selected_record(self):
         selected_row = self.tableWidget.selectedItems()
@@ -528,6 +633,13 @@ class Gui(QMainWindow):
             self.front_to_back_queue.put(send_back)
 
     def data_for_FAS(self):
+        if self.window_FAS.spectrogram_window is not None:
+            print('close1')
+            self.spec_canvas.axes_spectrogram[0].clear()
+            self.spec_canvas.axes_spectrogram[1].clear()
+            print('close2')
+            self.spec_canvas.fig_spectrogram.canvas.draw()
+
         self.data_abscissa = []
         self.data_ordinate = []
         for i in range(3):
@@ -540,7 +652,7 @@ class Gui(QMainWindow):
                 self.data_ordinate += ['']
 
         signal = {'Action': 'CalculateFAS', 'DataX': self.data_abscissa,
-                  'DataY': self.data_ordinate}
+                  'DataTime': self.data_ordinate}
         self.front_to_back_queue.put(signal)
 
     def show_loading_window(self):
@@ -552,6 +664,23 @@ class Gui(QMainWindow):
         if self.window_FAS.isVisible() != True:
             time.sleep(0.25)
             self.window_FAS.show()
+
+        self.window_FAS.canvas_FAS.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.abscissa_scale = QtWidgets.QAction(
+            'Change X scale to linear', self)
+        self.ordinate_scale = QtWidgets.QAction(
+            'Change Y scale to logarithmic', self)
+        self.fig_canvas_FIG_grid = QtWidgets.QAction('Toggle grid', self)
+
+        self.ordinate_scale.triggered.connect(self.change_ordinate_scale)
+        self.abscissa_scale.triggered.connect(self.change_abscissa_scale)
+        self.fig_canvas_FIG_grid.triggered.connect(
+            self.fig_canvas_FAS_grid_on_off)
+
+        self.window_FAS.canvas_FAS.addAction(self.abscissa_scale)
+        self.window_FAS.canvas_FAS.addAction(self.ordinate_scale)
+        self.window_FAS.canvas_FAS.addAction(self.fig_canvas_FIG_grid)
+
         self.window_FAS.canvas_FAS.axes_FAS[0].clear()
         self.window_FAS.canvas_FAS.axes_FAS[1].clear()
         self.window_FAS.canvas_FAS.axes_FAS[2].clear()
@@ -566,41 +695,310 @@ class Gui(QMainWindow):
         self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
         self.window_FAS.submit_clicked_spectrogram_to_gui.connect(
             self.initiate_plot_spectrogram_data)
+        self.window_FAS.submit_event_spectrogram_to_gui.connect(
+            self.spectrogram_phases_Picked_on_spectrogram)
+
         time.sleep(0.2)
         self.window_FAS.raise_()
 
+    def spectrogram_phases_Picked_on_spectrogram(self, str_phase, value):
+        self.x_mouse_location = float(value)
+        if str_phase == 'P_phase_draw':
+            self.draw_P_phase()
+        elif str_phase == 'S_phase_draw':
+            self.draw_S_phase()
+        elif str_phase == 'Phase_delete':
+            self.delete_phases(value)
+
     def initiate_plot_spectrogram_data(self, channel):
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[0] \
-            .clear()
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[1] \
-            .clear()
+        self.spec_canvas = self.window_FAS.spectrogram_window.canvas_spectrogram
+        self.spec_canvas.axes_spectrogram[0].clear()
+        self.spec_canvas.axes_spectrogram[1].clear()
+
+        self.list_lines_P_phase_spec_axes_0 = []
+        self.list_lines_P_phase_spec_axes_1 = []
+        self.list_lines_S_phase_spec_axes_0 = []
+        self.list_lines_S_phase_spec_axes_1 = []
 
         self.index_channel = (np.array(['CH 1', 'CH 2', 'CH 3']) ==
                               channel).nonzero()[0][0]
 
         abscissa_spectrogram = self.data_abscissa[self.index_channel]
         ordinate_spectrogram = self.data_ordinate[self.index_channel]
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[1
-        ].plot(abscissa_spectrogram, ordinate_spectrogram)
+        self.spec_canvas.axes_spectrogram[1].plot(abscissa_spectrogram, ordinate_spectrogram)
 
         signal = {'Action': 'CalculateSpectrogram',
                   'DataX': abscissa_spectrogram,
-                  'DataY': ordinate_spectrogram}
+                  'DataTime': ordinate_spectrogram}
         self.front_to_back_queue.put(signal)
 
     def plot_spectrogram_data(self, data_freq, data_time, amplitude, frequency):
         color_map = cm.jet
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[
+        self.spec_canvas.axes_spectrogram[
             0].contourf(data_time, data_freq, amplitude,
                         levels=500, cmap=color_map)
 
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[
-            0].set_ylabel('Frequency [Hz]')
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[
-            1].set_xlabel('Time [s]')
-        self.window_FAS.spectogram_window.canvas_spectrogram.axes_spectrogram[
-            0].set_aspect('auto')
+        #self.spec_canvas.axes_spectrogram[0].set_ylabel('Frequency [Hz]')
+        self.spec_canvas.axes_spectrogram[1].set_xlabel('Time [s]')
+        self.spec_canvas.axes_spectrogram[0].set_aspect('auto')
+        self.spec_canvas.axes_spectrogram[1].set_aspect('auto')
+        self.spec_canvas.axes_spectrogram[0].set_xticks([])
+        self.spec_canvas.axes_spectrogram[0].set_xlim(
+            [0, len(self.data_abscissa[self.index_channel]) / frequency])
+        self.spec_canvas.axes_spectrogram[1].set_xlim(
+            [0, len(self.data_abscissa[self.index_channel]) / frequency])
+        #plt.xlim([0, len(self.data_abscissa[self.index_channel]) / frequency])
 
-        plt.xlim([0, len(self.data_abscissa[self.index_channel]) / frequency])
-        self.window_FAS.spectogram_window.canvas_spectrogram.fig_spectrogram.canvas.draw()
+        if self.P_phase_time != 0:
+            self.list_lines_P_phase_spec_axes_0 += [
+                self.spec_canvas.axes_spectrogram[0].axvline(
+                    self.P_phase_time, color='green', picker=True, pickradius=1.5)]
+            self.list_lines_P_phase_spec_axes_1 += [
+                self.spec_canvas.axes_spectrogram[1].axvline(
+                    self.P_phase_time, color='green', picker=True, pickradius=1.5)]
 
+        if self.S_phase_time != 0:
+            self.list_lines_S_phase_spec_axes_0 += [
+                self.spec_canvas.axes_spectrogram[0].axvline(
+                    self.S_phase_time, color='red', picker=True, pickradius=1.5)]
+            self.list_lines_S_phase_spec_axes_1 += [
+                self.spec_canvas.axes_spectrogram[1].axvline(
+                    self.S_phase_time, color='red', picker=True, pickradius=1.5)]
+
+        self.spec_canvas.fig_spectrogram.canvas.draw()
+
+    def keyPressEvent(self, event):
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers & Qt.ControlModifier:
+            if event.key() == Qt.Key_S and self.x_mouse_location is not None:
+                self.draw_S_phase()
+            elif event.key() == Qt.Key_D and self.x_mouse_location is not None:
+                self.draw_P_phase()
+            elif event.key() == Qt.Key_E:
+                print("Ctrl + E")
+                print(self.y_mouse_location)
+
+    def on_click(self, event):
+        print(' x=%d, y=%d, xdata=%f, ydata=%f' %
+              (event.x, event.y, event.xdata, event.ydata))
+
+    def on_move(self, event):
+        self.x_mouse_location = event.xdata
+        self.y_mouse_location = event.ydata
+
+    def mouse_press_event(self, event):
+        print(event)
+        if event.mouseevent.button == 2:
+            this_line = event.artist
+            value_of_deleted_line = this_line._x[0]
+            print(value_of_deleted_line)
+
+            self.delete_phases(value_of_deleted_line)
+
+    def delete_phases(self, value_of_deleted_line):
+        value_of_deleted_line = float(value_of_deleted_line)
+        if value_of_deleted_line == self.S_phase_time:
+            self.S_phase_time = 0
+            self.S_QLineEdit.setText(str(self.S_phase_time))
+        elif value_of_deleted_line == self.P_phase_time:
+            self.P_phase_time = 0
+            self.P_QLineEdit.setText(str(self.P_phase_time))
+
+        for i in range(len(self.list_ind_plot)):
+            children = self.fig_canvas.axes[self.list_ind_plot[i]]._children
+            for j in range(len(children)):
+                if isinstance(children[j], matplotlib.lines.Line2D):
+                    value_of_child = children[j]._x[0]
+                    if value_of_child == value_of_deleted_line:
+                        self.fig_canvas.axes[
+                            self.list_ind_plot[i]]._children.pop(j)
+                        break
+
+        if self.spec_canvas is not None:
+            children_spectrogram_axes0 = \
+                self.spec_canvas.axes_spectrogram[0]._children
+            children_spectrogram_axes1 = \
+                self.spec_canvas.axes_spectrogram[1]._children
+
+            for i in range(len(children_spectrogram_axes0)):
+                if isinstance(children_spectrogram_axes0[i],
+                              matplotlib.lines.Line2D):
+                    value_of_child = \
+                        children_spectrogram_axes0[i]._x[0]
+                    print('value_of_child')
+                    print(value_of_child)
+
+                    if value_of_child == value_of_deleted_line:
+                        self.spec_canvas.axes_spectrogram[0]._children.pop(i)
+                        break
+
+            for i in range(len(children_spectrogram_axes1)):
+                if isinstance(children_spectrogram_axes1[i],
+                              matplotlib.lines.Line2D):
+                    value_of_child = \
+                        children_spectrogram_axes1[i]._x[0]
+                    print('value_of_child')
+                    print(value_of_child)
+                    if value_of_child == value_of_deleted_line:
+                        self.spec_canvas.axes_spectrogram[1]._children.pop(i)
+                        break
+
+            self.spec_canvas.fig_spectrogram.canvas.draw()
+        self.fig_canvas.figs.canvas.draw()
+
+    def draw_S_phase(self):
+        self.S_phase_time = np.round(self.x_mouse_location, 2)
+        self.S_QLineEdit.setText(str(self.S_phase_time))
+
+        if len(self.list_lines_S_phase) != 0:
+            for j in range(len(self.list_ind_plot)):
+                children = self.fig_canvas.axes[self.list_ind_plot[j]]._children
+                for l in range(len(children)):
+                    if id(children[l]) == id(self.list_lines_S_phase[j]):
+                        self.fig_canvas.axes[
+                            self.list_ind_plot[j]]._children.pop(l)
+                        break
+            self.list_lines_S_phase = []
+
+        for i in range(len(self.list_ind_plot)):
+            self.list_lines_S_phase += [
+                self.fig_canvas.axes[self.list_ind_plot[i]].axvline(
+                    self.S_phase_time, color='red',
+                    picker=True, pickradius=1.5)]
+
+        self.fig_canvas.figs.canvas.draw()
+
+        if self.spec_canvas != None:
+
+            if len(self.list_lines_S_phase_spec_axes_0) != 0:
+                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[0]._children
+                for l in range(len(children_spectrogram_axes0)):
+                    if id(children_spectrogram_axes0[l]) == \
+                            id(self.list_lines_S_phase_spec_axes_0[0]):
+                        self.spec_canvas.axes_spectrogram[0]._children.pop(l)
+                        break
+                self.list_lines_S_phase_spec_axes_0 = []
+
+            self.list_lines_S_phase_spec_axes_0 += [self.spec_canvas.axes_spectrogram[
+                0].axvline(self.S_phase_time, color='red',
+                           picker=True, pickradius=1.5)]
+
+            if len(self.list_lines_S_phase_spec_axes_1) != 0:
+                children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[1]._children
+                for l in range(len(children_spectrogram_axes1)):
+                    if id(children_spectrogram_axes1[l]) == \
+                            id(self.list_lines_S_phase_spec_axes_1[0]):
+                        self.spec_canvas.axes_spectrogram[1]._children.pop(l)
+                        break
+                self.list_lines_S_phase_spec_axes_1 = []
+
+            self.list_lines_S_phase_spec_axes_1 += [self.spec_canvas.axes_spectrogram[
+                1].axvline(self.S_phase_time, color='red',
+                           picker=True, pickradius=1.5)]
+
+
+
+            self.spec_canvas.fig_spectrogram.canvas.draw()
+
+    def draw_P_phase(self):
+        self.P_phase_time = np.round(self.x_mouse_location, 2)
+        self.P_QLineEdit.setText(str(self.P_phase_time))
+
+        if len(self.list_lines_P_phase) != 0:
+            for j in range(len(self.list_ind_plot)):
+                children = self.fig_canvas.axes[self.list_ind_plot[j]]._children
+                for l in range(len(children)):
+                    if id(children[l]) == id(self.list_lines_P_phase[j]):
+                        self.fig_canvas.axes[
+                            self.list_ind_plot[j]]._children.pop(l)
+                        break
+            self.list_lines_P_phase = []
+
+        for i in range(len(self.list_ind_plot)):
+            self.list_lines_P_phase += [
+                self.fig_canvas.axes[self.list_ind_plot[i]].axvline(
+                    self.P_phase_time, color='green',
+                    picker=True, pickradius=1.5)]
+
+        self.fig_canvas.figs.canvas.draw()
+
+        if self.spec_canvas != None:
+            if len(self.list_lines_P_phase_spec_axes_0) != 0:
+                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[0]._children
+                for l in range(len(children_spectrogram_axes0)):
+                    if id(children_spectrogram_axes0[l]) == \
+                            id(self.list_lines_P_phase_spec_axes_0[0]):
+                        self.spec_canvas.axes_spectrogram[0]._children.pop(l)
+                        break
+                self.list_lines_P_phase_spec_axes_0 = []
+
+            self.list_lines_P_phase_spec_axes_0 += [self.spec_canvas.axes_spectrogram[
+                0].axvline(self.P_phase_time, color='green',
+                           picker=True, pickradius=1.5)]
+
+            if len(self.list_lines_P_phase_spec_axes_1) != 0:
+                 children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[1]._children
+                 for l in range(len(children_spectrogram_axes1)):
+                     if id(children_spectrogram_axes1[l]) == \
+                             id(self.list_lines_P_phase_spec_axes_1[0]):
+                         self.spec_canvas.axes_spectrogram[1]._children.pop(l)
+                         break
+                 self.list_lines_P_phase_spec_axes_1 = []
+
+            self.list_lines_P_phase_spec_axes_1 += [self.spec_canvas.axes_spectrogram[
+                1].axvline(self.P_phase_time, color='green',
+                           picker=True, pickradius=1.5)]
+
+            self.spec_canvas.fig_spectrogram.canvas.draw()
+
+    def change_abscissa_scale(self):
+        if self.abscissa_FAS_log:
+            self.abscissa_scale.setText('Change X scale to logarithmic')
+            self.window_FAS.canvas_FAS.axes_FAS[0].set_xscale('linear')
+            self.window_FAS.canvas_FAS.axes_FAS[1].set_xscale('linear')
+            self.window_FAS.canvas_FAS.axes_FAS[2].set_xscale('linear')
+            self.abscissa_FAS_log = False
+        else:
+            self.abscissa_scale.setText('Change X scale to linear')
+            self.window_FAS.canvas_FAS.axes_FAS[0].set_xscale('log')
+            self.window_FAS.canvas_FAS.axes_FAS[1].set_xscale('log')
+            self.window_FAS.canvas_FAS.axes_FAS[2].set_xscale('log')
+            self.abscissa_FAS_log = True
+        self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
+
+    def change_ordinate_scale(self):
+        if self.ordinate_FAS_log:
+            self.ordinate_scale.setText('Change Y scale to logarithmic')
+            self.window_FAS.canvas_FAS.axes_FAS[0].set_yscale('linear')
+            self.window_FAS.canvas_FAS.axes_FAS[1].set_yscale('linear')
+            self.window_FAS.canvas_FAS.axes_FAS[2].set_yscale('linear')
+            self.ordinate_FAS_log = False
+        else:
+            self.ordinate_scale.setText('Change Y scale to linear')
+            self.window_FAS.canvas_FAS.axes_FAS[0].set_yscale('log')
+            self.window_FAS.canvas_FAS.axes_FAS[1].set_yscale('log')
+            self.window_FAS.canvas_FAS.axes_FAS[2].set_yscale('log')
+            self.ordinate_FAS_log = True
+        self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
+
+    def fig_canvas_grid_on_off(self):
+        if self.grid_dummy:
+            for i in range(3):
+                self.fig_canvas.axes[i].grid(True)
+            self.grid_dummy = False
+        else:
+            for i in range(3):
+                self.fig_canvas.axes[i].grid(False)
+            self.grid_dummy = True
+        self.fig_canvas.figs.canvas.draw()
+
+    def fig_canvas_FAS_grid_on_off(self):
+        if self.grid_FAS_dummy:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(True)
+            self.grid_FAS_dummy = False
+        else:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(False)
+            self.grid_FAS_dummy = True
+        self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()

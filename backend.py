@@ -123,9 +123,9 @@ class BackendHandler:
                     self.back_to_front_queue.put(signal_out)
 
             elif signal['Action'] == 'CalculateFAS':
-                self.calculate_FAS(signal['DataX'], signal['DataY'])
+                self.calculate_FAS(signal['DataX'], signal['DataTime'])
             elif signal['Action'] == 'CalculateSpectrogram':
-                self.calculate_spectrogram(signal['DataX'], signal['DataY'])
+                self.calculate_spectrogram(signal['DataX'], signal['DataTime'])
 
     def read_paths(self, path, files_all):
         in_path_first = os.listdir(path)
@@ -309,11 +309,11 @@ class BackendHandler:
         str_data_ch3 = re.findall(str_re_findall, str_data_ch3)
         array_data_ch3 = np.array(str_data_ch3)
 
-        #station = file_read_lines[4][:19].replace('  ', '')
+        # station = file_read_lines[4][:19].replace('  ', '')
         station = file_read_lines[4][11:20].replace(' ', '')
         period = re.findall(str_re_findall, file_read_lines[10])[-1]
         channels = ['CH 1', 'CH 2', 'CH 3']
-        periods_all = 1/np.array(periods_all, dtype=np.float64)
+        periods_all = 1 / np.array(periods_all, dtype=np.float64)
 
         return array_data_ch1, array_data_ch2, array_data_ch3, \
             station, periods_all, channels
@@ -330,50 +330,50 @@ class BackendHandler:
             if len(read_traces) == 1:
                 array_data = np.array(read_traces[0].data, dtype=np.float64)
                 array_data_all += [array_data]
-                period_all += [1/float(read_traces[0].stats.sampling_rate)]
+                period_all += [1 / float(read_traces[0].stats.sampling_rate)]
                 channel_all += [df_obs['Obs_channel'][i]]
         return array_data_all, period_all, channel_all
 
     def calculate_FAS(self, X_data, Y_data):
-        X_data_FAS = []
-        Y_data_FAS = []
+        x_data_FAS_list = []
+        y_data_FAS_list = []
         for i in range(3):
             if len(X_data[i]) > 1:
-                X_data_calc = np.array(X_data[i], dtype=np.float64)
-                Y_data_calc = np.array(Y_data[i], dtype=np.float64)
+                x_data_calc = np.array(X_data[i], dtype=np.float64)
+                y_data_calc = np.array(Y_data[i], dtype=np.float64)
 
-                record_frequency = X_data_calc[1] - X_data_calc[0]
+                record_frequency = x_data_calc[1] - x_data_calc[0]
 
-                X_data_FAS_calc = fft.fftfreq(len(X_data_calc)) * \
-                                  record_frequency
-                Y_data_FAS_calc = fft.fft(Y_data_calc)
+                x_data_FAS_calc = \
+                    fft.fftfreq(len(x_data_calc)) * record_frequency
+                y_data_FAS_calc = fft.fft(y_data_calc)
 
-                X_data_FAS_calc = np.array(X_data_FAS_calc)[1: int(
-                    len(X_data_FAS_calc) / 2)]
-                Y_data_FAS_calc = np.abs(np.array(Y_data_FAS_calc)[1: int(
-                    len(Y_data_FAS_calc) / 2)])
+                x_data_FAS_calc = np.array(x_data_FAS_calc)[1: int(
+                    len(x_data_FAS_calc) / 2)]
+                y_data_FAS_calc = np.abs(np.array(y_data_FAS_calc)[1: int(
+                    len(y_data_FAS_calc) / 2)])
 
-                X_data_FAS += [np.array(X_data_FAS_calc, dtype=np.float64)]
-                Y_data_FAS += [np.array(Y_data_FAS_calc, dtype=np.float64)]
+                x_data_FAS_list += [np.array(x_data_FAS_calc, dtype=np.float64)]
+                y_data_FAS_list += [np.array(y_data_FAS_calc, dtype=np.float64)]
             else:
-                X_data_FAS += ['']
-                Y_data_FAS += ['']
+                x_data_FAS_list += ['']
+                y_data_FAS_list += ['']
 
-        signal_out = {'Action': 'DrawFAS', 'DataX': X_data_FAS,
-                      'DataY': Y_data_FAS}
+        signal_out = {'Action': 'DrawFAS', 'DataX': x_data_FAS_list,
+                      'DataTime': y_data_FAS_list}
         self.back_to_front_queue.put(signal_out)
 
-    def calculate_spectrogram(self, X_data, Y_data):
-        frequency = 1 / (X_data[1] - X_data[0])
+    def calculate_spectrogram(self, frequency_axis, amplitude_axis):
+        record_frequency = 1 / (frequency_axis[1] - frequency_axis[0])
         freq_spectrogram, time_spectrogram, amplitude_spectrogram = \
-            signal.spectrogram(Y_data, frequency)
+            signal.spectrogram(amplitude_axis, record_frequency)
 
         amplitude_spectrogram = 10 * np.log(amplitude_spectrogram /
                                             np.max(amplitude_spectrogram))
 
         signal_out = {'Action': 'DrawSpectrogram',
                       'DataFreq': freq_spectrogram,
-                      'DataY': time_spectrogram,
+                      'DataTime': time_spectrogram,
                       'Amplitude': amplitude_spectrogram,
-                      'Frequency': frequency}
+                      'Frequency': record_frequency}
         self.back_to_front_queue.put(signal_out)
