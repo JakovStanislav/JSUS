@@ -6,12 +6,15 @@ import time
 import matplotlib
 import numpy as np
 from queue import Queue
+
+import pandas as pd
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import Qt
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtWidgets
 import matplotlib.pyplot as plt
+import pylab as pl
 from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, \
     NavigationToolbar2QT as NavigationToolbar
@@ -20,6 +23,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTableWidget, QTableWidgetItem, QHBoxLayout, QToolBar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, \
     NavigationToolbar2QT as NavigationToolbar
+from cycler import cycler
 
 # matplotlib.use('Qt5Agg')
 matplotlib.use('agg')
@@ -54,6 +58,16 @@ class MplCanvasFAS(FigureCanvasQTAgg):
         self.figs_FAS.tight_layout()
         # self.axes = self.fig.add_subplot(111)
         super(MplCanvasFAS, self).__init__(self.fig_FAS)
+
+class MplCanvasColormap(FigureCanvasQTAgg):
+    def __init__(self, parent=None, no_colors=1, width=5., height=4., dpi=100):
+        self.fig_colormap, self.ax2_colormap = plt.subplots(
+             no_colors, 1, figsize=(width, height), dpi=dpi)
+        self.axes_colormap = self.ax2_colormap
+        self.figs_colormap = self.fig_colormap
+        self.figs_colormap.tight_layout()
+        # self.axes = self.fig.add_subplot(111)
+        super(MplCanvasColormap, self).__init__(self.fig_colormap)
 
 
 class MplCanvas_Spectrogram(FigureCanvasQTAgg):
@@ -98,7 +112,7 @@ class FASWindow(QWidget):
         self.spectrogram_window = None
         self.setWindowTitle('Fourier Amplitude Spectra')
         self.setGeometry(20, 20, 850, 750)
-        self.canvas_FAS = MplCanvasFAS(self, width=5, height=4, dpi=100)
+        self.canvas_FAS = MplCanvasFAS(self, width=5, height=8, dpi=100)
         self.cid = self.canvas_FAS.figs_FAS.canvas.mpl_connect(
             "motion_notify_event", self.on_move)
 
@@ -139,6 +153,14 @@ class FASWindow(QWidget):
 
     def fun_show_spectrogram(self):
         self.spectrogram_window = SpectrogramWindow()
+        self.spectrogram_window.canvas_spectrogram.setContextMenuPolicy(
+            Qt.ActionsContextMenu)
+        self.fig_spectrogram_colormap = QtWidgets.QAction(
+            'Change colormap', self)
+        self.fig_spectrogram_colormap.triggered.connect(
+            self.fig_canvas_colormap_change)
+        self.spectrogram_window.canvas_spectrogram.addAction(
+            self.fig_spectrogram_colormap)
         self.spectrogram_window.show()
         self.spectrogram_window.submit_clicked_spectrogram_to_fas.connect(
             self.connect_fas_spectrogram_gui)
@@ -148,7 +170,18 @@ class FASWindow(QWidget):
         self.submit_clicked_spectrogram_to_gui.emit(channel)
     def connect_fas_spectrogram_gui_event(self, str_phase, value):
         self.submit_event_spectrogram_to_gui.emit(str_phase, value)
-
+    def fig_canvas_colormap_change(self):
+        self.colormap_window = SelectColormapWindow()
+        self.colormap_window.submit_clicked_colormap.connect(self.update_colors)
+    def update_colors(self, cmap_str):
+        ax = self.spectrogram_window.canvas_spectrogram.axes_spectrogram[0]
+        print(cmap_str)
+        cmap = pl.get_cmap(cmap_str)
+        lines = ax._children
+        colors = cmap(np.linspace(0, 1, len(lines)))
+        for line, c in zip(lines, colors):
+            line.set_color(c)
+        self.spectrogram_window.canvas_spectrogram.fig_spectrogram.canvas.draw()
 
 class SpectrogramWindow(QWidget):
     """
@@ -229,6 +262,121 @@ class SpectrogramWindow(QWidget):
             self.submit_event_spectrogram_to_fas.emit(
                 'Phase_delete', str(value_of_deleted_line))
 
+class SelectColormapWindow(QWidget):
+    """
+    This "window" is a QWidget. If it has no parent, it
+    will appear as a free-floating window as we want.
+    """
+    submit_clicked_colormap = qtc.pyqtSignal(str)
+    def __init__(self):
+        super().__init__()
+        self.df_colormaps = pd.read_csv(r'ColorMaps.csv', delimiter=';')
+        print(self.df_colormaps)
+        self.setWindowTitle('Select colormap')
+        self.setGeometry(20, 20, 500, 300)
+
+        categories = self.df_colormaps['Categories']
+        cmap_list = (self.df_colormaps['Colormaps'][
+            self.df_colormaps['Categories'] == categories[0]]).item()
+        cmap_list = list(cmap_list.split(', '))
+        self.old_cmap_list = cmap_list
+        self.combo_box_category = QComboBox()
+        self.combo_box_category.addItems(categories)
+        self.category_QLabel = QLabel(self)
+        self.category_QLabel.setText('Select category:')
+        self.category_QLabel.setFixedWidth(80)
+        self.combo_box_category.currentTextChanged.connect(
+            self.changed_category)
+            #setContextMenuPolicy(Qt.Actions)
+        #self.fig_canvas_grid = QtWidgets.QAction('Toggle grid', self)
+        #self.fig_canvas_grid.triggered.connect(self.fig_canvas_grid_on_off)
+
+        self.combo_box_colormap = QComboBox()
+        self.combo_box_colormap.addItems(cmap_list)
+        self.colormap_QLabel = QLabel(self)
+        self.colormap_QLabel.setText('Select colormap:')
+        self.colormap_QLabel.setFixedWidth(80)
+        self.combo_box_colormap.currentTextChanged.connect(
+            self.changed_colormap)
+
+        self.category_layout = QHBoxLayout(self)
+        self.category_widget = QWidget(self)
+        self.category_layout.addWidget(self.category_QLabel)
+        self.category_layout.addWidget(self.combo_box_category)
+        self.category_widget.setLayout(self.category_layout)
+
+        self.colormap_layout = QHBoxLayout(self)
+        self.colormap_widget = QWidget(self)
+        self.colormap_layout.addWidget(self.colormap_QLabel)
+        self.colormap_layout.addWidget(self.combo_box_colormap)
+        self.colormap_widget.setLayout(self.colormap_layout)
+
+        category = categories[0]
+        self.plot_color_gradients(category, cmap_list)
+        self.main_layout = QVBoxLayout(self)
+        self.main_widget = QWidget(self)
+        self.main_layout.addWidget(self.category_widget)
+        self.main_layout.addWidget(self.colormap_widget)
+        self.main_layout.addWidget(self.fig_canvas_colormap)
+        self.main_layout.addStretch()
+        self.main_widget.setLayout(self.main_layout)
+        self.setLayout(self.main_layout)
+        self.show()
+
+    def changed_category(self):
+        new_category = self.combo_box_category.currentText()
+        print(new_category)
+        self.main_layout.removeWidget(self.fig_canvas_colormap)
+        self.fig_canvas_colormap.deleteLater()
+        self.fig_canvas_colormap = None
+
+        self.combo_box_colormap.disconnect()
+        cmap_list = (self.df_colormaps['Colormaps'][
+            self.df_colormaps['Categories'] == new_category]).item()
+        cmap_list = list(cmap_list.split(', '))
+        print(cmap_list)
+        self.combo_box_colormap.clear()
+        self.combo_box_colormap.currentTextChanged.connect(
+            self.changed_colormap)
+        self.combo_box_colormap.addItems(cmap_list)
+        self.plot_color_gradients(new_category, cmap_list)
+        self.fig_canvas_colormap.figs_colormap.canvas.draw()
+        self.main_layout.addWidget(self.fig_canvas_colormap)
+        self.main_layout.addStretch()
+        self.main_layout.update()
+    def changed_colormap(self):
+        new_colormap = self.combo_box_colormap.currentText()
+        print(new_colormap)
+        self.submit_clicked_colormap.emit(new_colormap)
+
+    def plot_color_gradients(self, category, cmap_list):
+        self.fig_canvas_colormap = None
+        cmaps = {}
+        gradient = np.linspace(0, 1, 256)
+        gradient = np.vstack((gradient, gradient))
+        nrows = len(cmap_list)
+        figh = 0.8 + (nrows + (nrows - 1) * 0.1) * 0.22
+        self.fig_canvas_colormap = MplCanvasColormap(
+            self, no_colors=nrows + 1, width=7, height=figh, dpi=100)
+        fig = self.fig_canvas_colormap.figs_colormap
+        axs = self.fig_canvas_colormap.axes_colormap
+        fig.subplots_adjust(top=1 - 0.35 / figh, bottom=0,
+                            left=0.2, right=0.99)#.15 / figh
+        #axs[0].set_title(' colormaps'.join([str(category), ' ']), fontsize=10)
+        axs[0].set_title(f'{category} colormaps', fontsize=14)
+
+        for ax, name in zip(axs, cmap_list):
+            ax.imshow(gradient, aspect='auto', cmap=matplotlib.colormaps[name])
+            ax.text(-0.01, 0.5, name, va='center', ha='right', fontsize=10,
+                    transform=ax.transAxes)
+
+        # Turn off *all* ticks & spines, not just the ones with colormaps.
+        for ax in axs:
+            ax.set_axis_off()
+
+        # Save colormap list for later.
+        cmaps[category] = cmap_list
+
 class Gui(QMainWindow):
 
     def __init__(self, front_to_back_queue: Queue, back_to_front_queue: Queue):
@@ -243,8 +391,6 @@ class Gui(QMainWindow):
         self.height = 15000
         self.window_loading = None
         self.window_FAS = None
-        self.abscissa_FAS_log = True
-        self.ordinate_FAS_log = False
         self.spec_canvas = None
         self.grid_dummy = True
         self.grid_FAS_dummy = True
@@ -376,6 +522,24 @@ class Gui(QMainWindow):
         self.show()
         self.window_FAS = FASWindow()
         self.window_FAS.hide()
+
+        self.abscissa_FAS_log = True
+        self.ordinate_FAS_log = False
+        self.window_FAS.canvas_FAS.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.abscissa_scale = QtWidgets.QAction(
+            'Change X scale to linear', self)
+        self.ordinate_scale = QtWidgets.QAction(
+            'Change Y scale to logarithmic', self)
+        self.fig_canvas_FIG_grid = QtWidgets.QAction('Toggle grid', self)
+
+        self.ordinate_scale.triggered.connect(self.change_ordinate_scale)
+        self.abscissa_scale.triggered.connect(self.change_abscissa_scale)
+        self.fig_canvas_FIG_grid.triggered.connect(
+            self.fig_canvas_FAS_grid_on_off)
+
+        self.window_FAS.canvas_FAS.addAction(self.abscissa_scale)
+        self.window_FAS.canvas_FAS.addAction(self.ordinate_scale)
+        self.window_FAS.canvas_FAS.addAction(self.fig_canvas_FIG_grid)
 
     def fun_read_file(self):
         self.fun_browser_file()
@@ -585,6 +749,14 @@ class Gui(QMainWindow):
         self.fig_canvas.axes[2].clear()
         self.list_ind_plot = []
 
+        if self.grid_dummy:
+            for i in range(3):
+                self.fig_canvas.axes[i].grid(True)
+        else:
+            for i in range(3):
+                self.fig_canvas.axes[i].grid(False)
+
+
         for i in range(len(ordinate)):
             period = float(period_all[i])
             ordinate_float = np.array(ordinate[i], dtype=np.float64)
@@ -665,32 +837,38 @@ class Gui(QMainWindow):
             time.sleep(0.25)
             self.window_FAS.show()
 
-        self.window_FAS.canvas_FAS.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.abscissa_scale = QtWidgets.QAction(
-            'Change X scale to linear', self)
-        self.ordinate_scale = QtWidgets.QAction(
-            'Change Y scale to logarithmic', self)
-        self.fig_canvas_FIG_grid = QtWidgets.QAction('Toggle grid', self)
-
-        self.ordinate_scale.triggered.connect(self.change_ordinate_scale)
-        self.abscissa_scale.triggered.connect(self.change_abscissa_scale)
-        self.fig_canvas_FIG_grid.triggered.connect(
-            self.fig_canvas_FAS_grid_on_off)
-
-        self.window_FAS.canvas_FAS.addAction(self.abscissa_scale)
-        self.window_FAS.canvas_FAS.addAction(self.ordinate_scale)
-        self.window_FAS.canvas_FAS.addAction(self.fig_canvas_FIG_grid)
-
         self.window_FAS.canvas_FAS.axes_FAS[0].clear()
         self.window_FAS.canvas_FAS.axes_FAS[1].clear()
         self.window_FAS.canvas_FAS.axes_FAS[2].clear()
+
+        if self.grid_FAS_dummy:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(True)
+        else:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(False)
+
         for i in range(3):
             if len(data_X[i]) > 1:
-                self.window_FAS.canvas_FAS.axes_FAS[i].semilogx(data_X[i],
+                self.window_FAS.canvas_FAS.axes_FAS[i].plot(data_X[i],
                                                                 data_Y[i])
                 self.window_FAS.canvas_FAS.axes_FAS[i].set_xlabel(
                     'Frequency [Hz]')
                 self.window_FAS.canvas_FAS.axes_FAS[i].set_ylabel('Amplitude')
+
+        if self.abscissa_FAS_log:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].set_xscale('log')
+        else:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].set_xscale('linear')
+        if self.ordinate_FAS_log:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].set_yscale('log')
+        else:
+            for i in range(3):
+                self.window_FAS.canvas_FAS.axes_FAS[i].set_yscale('linear')
+
         self.window_FAS.canvas_FAS.figs_FAS.tight_layout()
         self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
         self.window_FAS.submit_clicked_spectrogram_to_gui.connect(
@@ -725,7 +903,8 @@ class Gui(QMainWindow):
 
         abscissa_spectrogram = self.data_abscissa[self.index_channel]
         ordinate_spectrogram = self.data_ordinate[self.index_channel]
-        self.spec_canvas.axes_spectrogram[1].plot(abscissa_spectrogram, ordinate_spectrogram)
+        self.spec_canvas.axes_spectrogram[1].plot(abscissa_spectrogram,
+                                                  ordinate_spectrogram)
 
         signal = {'Action': 'CalculateSpectrogram',
                   'DataX': abscissa_spectrogram,
@@ -733,7 +912,7 @@ class Gui(QMainWindow):
         self.front_to_back_queue.put(signal)
 
     def plot_spectrogram_data(self, data_freq, data_time, amplitude, frequency):
-        color_map = cm.jet
+        color_map = cm.viridis
         self.spec_canvas.axes_spectrogram[
             0].contourf(data_time, data_freq, amplitude,
                         levels=500, cmap=color_map)
@@ -984,21 +1163,21 @@ class Gui(QMainWindow):
     def fig_canvas_grid_on_off(self):
         if self.grid_dummy:
             for i in range(3):
-                self.fig_canvas.axes[i].grid(True)
+                self.fig_canvas.axes[i].grid(False)
             self.grid_dummy = False
         else:
             for i in range(3):
-                self.fig_canvas.axes[i].grid(False)
+                self.fig_canvas.axes[i].grid(True)
             self.grid_dummy = True
         self.fig_canvas.figs.canvas.draw()
 
     def fig_canvas_FAS_grid_on_off(self):
         if self.grid_FAS_dummy:
             for i in range(3):
-                self.window_FAS.canvas_FAS.axes_FAS[i].grid(True)
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(False)
             self.grid_FAS_dummy = False
         else:
             for i in range(3):
-                self.window_FAS.canvas_FAS.axes_FAS[i].grid(False)
+                self.window_FAS.canvas_FAS.axes_FAS[i].grid(True)
             self.grid_FAS_dummy = True
         self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
