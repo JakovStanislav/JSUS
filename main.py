@@ -4,7 +4,7 @@ from queue import Queue
 
 import backend
 import frontend
-
+__version__ = '0.1.0'
 
 def main():
     back_to_front_queue = Queue()
