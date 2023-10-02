@@ -177,7 +177,10 @@ class FASWindow(QWidget):
         ax = self.spectrogram_window.canvas_spectrogram.axes_spectrogram[0]
         print(cmap_str)
         cmap = pl.get_cmap(cmap_str)
-        lines = ax._children
+        try:
+            lines = ax._children
+        except AttributeError:
+            lines = ax.collections
         colors = cmap(np.linspace(0, 1, len(lines)))
         for line, c in zip(lines, colors):
             line.set_color(c)
