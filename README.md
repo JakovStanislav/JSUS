@@ -1,4 +1,3 @@
-JSUS
 # JSUS
 JSUS-Just a Simple UI for Seismologists
 ==========
