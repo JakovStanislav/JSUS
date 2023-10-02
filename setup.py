@@ -10,5 +10,5 @@ setup(
     author_email='jakov.stanislav@gmail.com',
 
     py_modules=['main', 'frontend', 'backend'],
-    data_files = [('', ['ColorMaps.csv'])],
+    #data_files=[('', ['ColorMaps.csv'])],
 )
