@@ -1,5 +1,4 @@
 # JSUS -Just a Simple UI for Seismologists
-==========
 
 Just a Simple UI for Seismologists (JSUS) is a user interface that helps seismologists quickly inspect 
 and visualize seismograph and accelerograph data. At the moment it is possible to read all formats that 
