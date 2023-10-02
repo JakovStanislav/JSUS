@@ -22,3 +22,5 @@ Finally, run the main:
 The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
 
 ![main window_screenshot](Screenshots/Main_window.png)
+
+
