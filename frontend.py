@@ -366,7 +366,8 @@ class SelectColormapWindow(QWidget):
         axs[0].set_title(f'{category} colormaps', fontsize=14)
 
         for ax, name in zip(axs, cmap_list):
-            ax.imshow(gradient, aspect='auto', cmap=matplotlib.colormaps[name])
+            cmap = cm.get_cmap(name)
+            ax.imshow(gradient, aspect='auto', cmap=cmap)  #matplotlib.colormaps[name]
             ax.text(-0.01, 0.5, name, va='center', ha='right', fontsize=10,
                     transform=ax.transAxes)
 
