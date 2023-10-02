@@ -178,12 +178,23 @@ class FASWindow(QWidget):
         print(cmap_str)
         cmap = pl.get_cmap(cmap_str)
         try:
-            lines = ax._children
+            lines = ax._children.copy()
         except AttributeError:
-            lines = ax.collections
+            lines = ax.collections.copy()
+
+        ind_to_pop = []
+        for i in range(len(lines)):
+            if isinstance(lines[i], matplotlib.lines.Line2D):
+                ind_to_pop += [i]
+
+        ind_to_pop = ind_to_pop[::-1]
+        for i in range(len(ind_to_pop)):
+            print(ind_to_pop[i])
+            lines.pop(ind_to_pop[i])
+
         colors = cmap(np.linspace(0, 1, len(lines)))
-        for line, c in zip(lines, colors):
-            line.set_color(c)
+        for line, col in zip(lines, colors):
+            line.set_color(col)
         self.spectrogram_window.canvas_spectrogram.fig_spectrogram.canvas.draw()
 
 class SpectrogramWindow(QWidget):
