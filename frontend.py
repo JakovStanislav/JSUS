@@ -1181,3 +1181,16 @@ class Gui(QMainWindow):
                 self.window_FAS.canvas_FAS.axes_FAS[i].grid(True)
             self.grid_FAS_dummy = True
         self.window_FAS.canvas_FAS.figs_FAS.canvas.draw()
+
+    def closeEvent(self, event):
+        close = QMessageBox()
+        close.setText('Are you sure you want to exit?')
+        close.setWindowTitle('Exit')
+        close.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        close = close.exec()
+
+        if close == QMessageBox.Yes:
+            event.accept()
+            sys.exit()
+        else:
+            event.ignore()
