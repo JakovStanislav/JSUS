@@ -19,8 +19,11 @@ Finally, run the main:
     python main.py
     
 ## Using JSUS
-The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
+The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the plotted data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
 
 ![main window_screenshot](Screenshots/Main_window.png)
 
+### Loading data
+Loading records into JSUS works by going to Files → Read batch, this will open a window where a user needs to select a folder from which he wants to read records. JSUS will automatically find all suitable records inside that folder and inside all subfolders of the selected folder.
 
+![reading_files_screenshot](Screenshots/Reading_files.png)
