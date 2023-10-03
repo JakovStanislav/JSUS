@@ -622,7 +622,7 @@ class Gui(QMainWindow):
 
     def contextMenuEventTable(self, point):
         contextMenu = QMenu(self)
-        load_file = contextMenu.addAction("Draw file")
+        load_file = contextMenu.addAction("Draw record")
         load_file_FAS = contextMenu.addAction("Calculate FAS")
         action = contextMenu.exec_(self.tableWidget.mapToGlobal(point))
         if action == load_file:
