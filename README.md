@@ -4,7 +4,7 @@ Just a Simple UI for Seismologists (JSUS) is a user interface that helps seismol
 
 ## Installing JSUS
 
-Argos works with Python 3.7 and higher.
+JSUS works with Python 3.7 and higher.
 
 To run JSUS first clone repository:
 
