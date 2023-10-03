@@ -62,7 +62,7 @@ In the spectrogram window, the user can select which channels spectrogram will b
     <img src="Screenshots/Spectrogram_window.png">
 </p>
 
-It is possible to change the colormap of the spectrogram by right-clicking over the spectrogram figure and pressing `Change colormap`. This will open a new window where it is possible to select colormap. Choosing a colormap is done by first selecting a category from which the colormap will be selected. When the category is selected, an image with all available colormaps from that category will appear. Now from the drop-down menu user can select the colormap that he wants. 
+It is possible to change the colormap of the spectrogram by right-clicking over the spectrogram figure and pressing `Change colormap`. This will open a new window where it is possible to select colormap. Choosing a colormap is done by first selecting a [category](https://matplotlib.org/stable/users/explain/colors/colormaps.html) from which the colormap will be selected. When the category is selected, an image with all available colormaps from that category will appear. Now from the drop-down menu user can select the colormap that he wants. 
 
 <p align="center">
     <img src="Screenshots/Spectrogram_window_colormaps.png">
