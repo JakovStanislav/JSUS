@@ -44,14 +44,24 @@ To plot the FAS of the selected record you need to click `Calculate FAS`.
 </p>
 
 ### FAS window
-In the FAS window, Fourier amplitude spectrum of existent channels will be displayed.
+In the FAS window, the Fourier amplitude spectrum of existent channels will be displayed.
 <p align="center">
     <img src="Screenshots/FAS_window.png">
 </p>
 
-Here it is possible to change the scale of both axes (**X** and **Y**) by pressing the right mouse button over the figures. Also, it is possible to turn on/off a grid by pressing `Draw grid`.
+Here it is possible to change the scale of both axes (**X** and **Y**) by pressing the right mouse button over the figures. Also, it is possible to turn on/off a grid by pressing `Toggle grid`.
 <p align="center">
     <img src="Screenshots/FAS_window_scale.png">
 </p>
+
+Finally from the FAS window, it is possible to show the spectrogram by pressing `Show spectrogram`.
+
+#### Spectrogram window
+In the spectrogram window, the user can select which channels spectrogram will be drawn.
+
+<p align="center">
+    <img src="Screenshots/Spectrogram_window.png">
+</p>
+
 
 
