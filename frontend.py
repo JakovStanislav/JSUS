@@ -529,7 +529,7 @@ class Gui(QMainWindow):
         read_batch = QAction('Read batch', self)
         read_batch.triggered.connect(self.fun_read_batch)
 
-        self.menu_files.addAction(read_file)
+        #self.menu_files.addAction(read_file)
         self.menu_files.addAction(read_batch)
         self.menu_data = self.menu_main.addMenu("&Data")
         open_map = QAction('Map selection', self)
