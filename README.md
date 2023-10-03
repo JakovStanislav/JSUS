@@ -68,5 +68,6 @@ It is possible to change the colormap of the spectrogram by right-clicking over 
     <img src="Screenshots/Spectrogram_window_colormaps.png">
 </p>
 
-
+### Phases picking
+In JSUS it is possible to pick **P** and **S** earthquake phases. To pick the **P** phase user needs to press `Ctrl+D` and to pick the **S** phase user needs to press `Ctrl+S` while the mouse cursor is over the appropriate position. It is also possible to delete picked phases by hovering the mouse cursor over the phase (line) you want to delete and pressing the `Middle mouse button`.
 
