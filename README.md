@@ -21,9 +21,24 @@ Finally, run the main:
 ## Using JSUS
 The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the plotted data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
 
-![main window_screenshot](Screenshots/Main_window.png)
+<p align="center">
+    <img src="Screenshots/Main_window.png">
+</p>
 
 ### Loading data
 Loading records into JSUS works by going to Files → Read batch, this will open a window where a user needs to select a folder from which he wants to read records. JSUS will automatically find all suitable records inside that folder and inside all subfolders of the selected folder.
 
-![reading_files_screenshot](Screenshots/Reading_files.png)
+<p align="center">
+    <img src="Screenshots/Reading_files.png">
+</p>
+
+### Plotting data
+To plot records press the right mouse button over the row of the record you want to draw and then click Draw record.
+<p align="center">
+    <img src="Screenshots/Draw_record.png">
+</p>
+
+To plot the Fourier spectra of the selected record you need to click Calculate FAS.
+<p align="center">
+    <img src="Screenshots/Calculate_FAS.png">
+</p>
