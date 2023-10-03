@@ -1,6 +1,6 @@
 # JSUS-Just a Simple UI for Seismologists
 
-**J**ust a **S**imple **U**I for **S**eismologists (JSUS) is a user interface that helps seismologists quickly inspect and visualize seismograph and accelerograph data. At the moment it is possible to read all formats that can be read using [ObsPy](https://docs.obspy.org/) package as well as files with the .v1 extension. In JSUS users can pick **P** and **S** earthquake phases and visualize the Fourier amplitude spectrum and spectrogram.
+**J**ust a **S**imple **U**I for **S**eismologists (JSUS) is a user interface that helps seismologists quickly inspect and visualize seismograph and accelerograph data. At the moment it is possible to read all formats that can be read using [ObsPy](https://docs.obspy.org/) package as well as files with the .v1 extension. In JSUS users can pick **P** and **S** earthquake phases and visualize the Fourier amplitude spectrum (FAS) and spectrogram.
 
 ## Installing JSUS
 
@@ -38,7 +38,20 @@ To plot records press the right mouse button over the row of the record you want
     <img src="Screenshots/Draw_record.png">
 </p>
 
-To plot the Fourier spectra of the selected record you need to click `Calculate FAS`.
+To plot the FAS of the selected record you need to click `Calculate FAS`.
 <p align="center">
     <img src="Screenshots/Calculate_FAS.png">
 </p>
+
+### FAS window
+In the FAS window, Fourier amplitude spectrum of existent channels will be displayed.
+<p align="center">
+    <img src="Screenshots/FAS_window.png">
+</p>
+
+Here it is possible to change the scale of both axes (**X** and **Y**) by pressing the right mouse button over the figures. Also, it is possible to turn on/off a grid by pressing `Draw grid`.
+<p align="center">
+    <img src="Screenshots/FAS_window_scale.png">
+</p>
+
+
