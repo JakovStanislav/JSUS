@@ -1,6 +1,6 @@
 # JSUS-Just a Simple UI for Seismologists
 
-**J**ust a **S**imple **U**I for **S**eismologists (JSUS) is a user interface that helps seismologists quickly inspect and visualize seismograph and accelerograph data. At the moment it is possible to read all formats that can be read using [ObsPy](https://docs.obspy.org/) package as well as files with the .v1 extension. In JSUS users can pick **P** and **S** earthquake phases and visualize the Fourier amplitude spectrum (FAS) and spectrogram.
+**J**ust a **S**imple **U**I for **S**eismologists (JSUS) is a user interface that helps seismologists quickly inspect and visualize seismogram and accelerogram data. At the moment it is possible to read all formats that can be read using [ObsPy](https://docs.obspy.org/) package as well as files with the .v1 extension. In JSUS users can pick **P** and **S** earthquake phases and visualize the Fourier amplitude spectrum (FAS) and spectrogram.
 
 ## Installing JSUS
 
@@ -62,11 +62,12 @@ In the spectrogram window, the user can select which channels spectrogram will b
     <img src="Screenshots/Spectrogram_window.png">
 </p>
 
-It is possible to change the colormap of the spectrogram by right-clicking over the spectrogram figure and pressing `Change colormap`. This will open a new window where it is possible to select colormap. Choosing a colormap is done by first selecting a category from which the colormap will be selected. When the category is selected, an image with all available colormaps from that category will appear. Now from the drop-down menu user can select the colormap that he wants. 
+It is possible to change the colormap of the spectrogram by right-clicking over the spectrogram figure and pressing `Change colormap`. This will open a new window where it is possible to select colormap. Choosing a colormap is done by first selecting a [category](https://matplotlib.org/stable/users/explain/colors/colormaps.html) from which the colormap will be selected. When the category is selected, an image with all available colormaps from that category will appear. Now from the drop-down menu user can select the colormap that he wants. 
 
 <p align="center">
     <img src="Screenshots/Spectrogram_window_colormaps.png">
 </p>
 
-
+### Phases picking
+In JSUS it is possible to pick **P** and **S** earthquake phases. To pick the **P** phase user needs to press `Ctrl+D` and to pick the **S** phase user needs to press `Ctrl+S` while the mouse cursor is over the appropriate position. It is also possible to delete picked phases by hovering the mouse cursor over the phase (line) you want to delete and pressing the `Middle mouse button`. Phase picking can be done on the main window and on the spectrogram window. The phase picked on one window will automatically be shown in another window. 
 
