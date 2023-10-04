@@ -10,7 +10,7 @@ setup(
     author_email='jakov.stanislav@gmail.com',
 
     py_modules=['main', 'frontend', 'backend'],
-    install_requires=['PyQt5', 'obspy', 'numpy', 'scipy', 'pandas',
-                      'matplotlib'],
+    install_requires=['matplotlib', 'numpy', 'scipy', 'pandas',
+                      'PyQt5', 'obspy'],
     #data_files=[('', ['ColorMaps.csv'])],
 )
