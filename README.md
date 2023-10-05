@@ -6,18 +6,13 @@
 
 JSUS works with Python 3.7 and higher.
 
-To run JSUS first clone repository:
+To install JSUS, first, you need to download the *Installing/Env_setup.bat* file from the repository by opening the terminal and typing:
 
-    git clone https://github.com/JakovStanislav/JSUS
-    
-Then run the setup.py file:
+    curl -o Env_setup.bat https://raw.githubusercontent.com/JakovStanislav/JSUS/main/Installing/Env_setup.bat
 
-    python setup.py install
-    
-Finally, run the main:
+After downloading the *Env_setup.bat* file run it. *Env_setup.bat* should, in the folder where the *Env_setup.bat* file is started, automatically create virtual environment and clone the git repository. All required packages will also be installed inside the new environment and the *setup.py* file will be installed.  
+After the *Env_setup.bat* file is finished run the *Run_JSUS.bat* file, which should start JSUS.
 
-    python main.py
-    
 ## Using JSUS
 The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the plotted data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
 
