@@ -1,5 +1,5 @@
 @echo off
-cd..
+cd ..
 cd Scripts
 call .\activate
 cd ..
