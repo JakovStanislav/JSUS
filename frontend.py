@@ -49,6 +49,7 @@ class MplCanvas(FigureCanvasQTAgg):
         # self.axes = self.fig.add_subplot(111)
         super(MplCanvas, self).__init__(self.fig)
 
+
 class MplCanvasFAS(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         self.fig_FAS, self.ax2_FAS = plt.subplots(3, 1, figsize=(width, height),
@@ -59,10 +60,11 @@ class MplCanvasFAS(FigureCanvasQTAgg):
         # self.axes = self.fig.add_subplot(111)
         super(MplCanvasFAS, self).__init__(self.fig_FAS)
 
+
 class MplCanvasColormap(FigureCanvasQTAgg):
     def __init__(self, parent=None, no_colors=1, width=5., height=4., dpi=100):
         self.fig_colormap, self.ax2_colormap = plt.subplots(
-             no_colors, 1, figsize=(width, height), dpi=dpi)
+            no_colors, 1, figsize=(width, height), dpi=dpi)
         self.axes_colormap = self.ax2_colormap
         self.figs_colormap = self.fig_colormap
         self.figs_colormap.tight_layout()
@@ -166,13 +168,17 @@ class FASWindow(QWidget):
             self.connect_fas_spectrogram_gui)
         self.spectrogram_window.submit_event_spectrogram_to_fas.connect(
             self.connect_fas_spectrogram_gui_event)
+
     def connect_fas_spectrogram_gui(self, channel):
         self.submit_clicked_spectrogram_to_gui.emit(channel)
+
     def connect_fas_spectrogram_gui_event(self, str_phase, value):
         self.submit_event_spectrogram_to_gui.emit(str_phase, value)
+
     def fig_canvas_colormap_change(self):
         self.colormap_window = SelectColormapWindow()
         self.colormap_window.submit_clicked_colormap.connect(self.update_colors)
+
     def update_colors(self, cmap_str):
         ax = self.spectrogram_window.canvas_spectrogram.axes_spectrogram[0]
         print(cmap_str)
@@ -197,6 +203,7 @@ class FASWindow(QWidget):
             line.set_color(col)
         self.spectrogram_window.canvas_spectrogram.fig_spectrogram.canvas.draw()
 
+
 class SpectrogramWindow(QWidget):
     """
     This "window" is a QWidget. If it has no parent, it
@@ -204,6 +211,7 @@ class SpectrogramWindow(QWidget):
     """
     submit_clicked_spectrogram_to_fas = qtc.pyqtSignal(str)
     submit_event_spectrogram_to_fas = qtc.pyqtSignal(str, str)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Spectrogram')
@@ -276,12 +284,14 @@ class SpectrogramWindow(QWidget):
             self.submit_event_spectrogram_to_fas.emit(
                 'Phase_delete', str(value_of_deleted_line))
 
+
 class SelectColormapWindow(QWidget):
     """
     This "window" is a QWidget. If it has no parent, it
     will appear as a free-floating window as we want.
     """
     submit_clicked_colormap = qtc.pyqtSignal(str)
+
     def __init__(self):
         super().__init__()
         self.df_colormaps = pd.read_csv(r'ColorMaps.csv', delimiter=';')
@@ -301,9 +311,9 @@ class SelectColormapWindow(QWidget):
         self.category_QLabel.setFixedWidth(80)
         self.combo_box_category.currentTextChanged.connect(
             self.changed_category)
-            #setContextMenuPolicy(Qt.Actions)
-        #self.fig_canvas_grid = QtWidgets.QAction('Toggle grid', self)
-        #self.fig_canvas_grid.triggered.connect(self.fig_canvas_grid_on_off)
+        # setContextMenuPolicy(Qt.Actions)
+        # self.fig_canvas_grid = QtWidgets.QAction('Toggle grid', self)
+        # self.fig_canvas_grid.triggered.connect(self.fig_canvas_grid_on_off)
 
         self.combo_box_colormap = QComboBox()
         self.combo_box_colormap.addItems(cmap_list)
@@ -358,6 +368,7 @@ class SelectColormapWindow(QWidget):
         self.main_layout.addWidget(self.fig_canvas_colormap)
         self.main_layout.addStretch()
         self.main_layout.update()
+
     def changed_colormap(self):
         new_colormap = self.combo_box_colormap.currentText()
         print(new_colormap)
@@ -375,13 +386,14 @@ class SelectColormapWindow(QWidget):
         fig = self.fig_canvas_colormap.figs_colormap
         axs = self.fig_canvas_colormap.axes_colormap
         fig.subplots_adjust(top=1 - 0.35 / figh, bottom=0,
-                            left=0.2, right=0.99)#.15 / figh
-        #axs[0].set_title(' colormaps'.join([str(category), ' ']), fontsize=10)
+                            left=0.2, right=0.99)  # .15 / figh
+        # axs[0].set_title(' colormaps'.join([str(category), ' ']), fontsize=10)
         axs[0].set_title(f'{category} colormaps', fontsize=14)
 
         for ax, name in zip(axs, cmap_list):
             cmap = cm.get_cmap(name)
-            ax.imshow(gradient, aspect='auto', cmap=cmap)  #matplotlib.colormaps[name]
+            ax.imshow(gradient, aspect='auto',
+                      cmap=cmap)  # matplotlib.colormaps[name]
             ax.text(-0.01, 0.5, name, va='center', ha='right', fontsize=10,
                     transform=ax.transAxes)
 
@@ -391,6 +403,7 @@ class SelectColormapWindow(QWidget):
 
         # Save colormap list for later.
         cmaps[category] = cmap_list
+
 
 class Gui(QMainWindow):
 
@@ -441,7 +454,7 @@ class Gui(QMainWindow):
                                                            self.on_click)
         self.cid = self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
                                                            self.keyPressEvent)
-        #self.cid = self.fig_canvas.figs.canvas.mpl_connect('button_press_event',
+        # self.cid = self.fig_canvas.figs.canvas.mpl_connect('button_press_event',
         #                                                   self.mousePressEvent)
         plt.gcf().canvas.mpl_connect('pick_event', self.mouse_press_event)
         self.cid = self.fig_canvas.figs.canvas.mpl_connect(
@@ -449,7 +462,6 @@ class Gui(QMainWindow):
         # self.fig_canvas.figs.canvas.mpl_connect('pick_event', self.on_click_del)
         # self.fig_canvas.figs.canvas.mpl_connect('key_press_event',
         #                                         self.on_click)
-
 
         self.fig_canvas.axes[0].plot([], [])
         self.fig_canvas.axes[1].plot([], [])
@@ -513,7 +525,7 @@ class Gui(QMainWindow):
         # self.ordinate_scale = QtWidgets.QAction("Change Y scale", self)
         # self.ordinate_scale.triggered.connect(self.change_ordinate_scale)
         self.fig_canvas.addAction(self.fig_canvas_grid)
-        #self.fig_canvas.addAction(self.ordinate_scale)
+        # self.fig_canvas.addAction(self.ordinate_scale)
 
         self.main_layout.addWidget(self.widget_left)
         self.main_layout.addWidget(self.widget_right)
@@ -528,12 +540,21 @@ class Gui(QMainWindow):
         read_file.triggered.connect(self.fun_read_file)
         read_batch = QAction('Read batch', self)
         read_batch.triggered.connect(self.fun_read_batch)
-
-        #self.menu_files.addAction(read_file)
+        # self.menu_files.addAction(read_file)
         self.menu_files.addAction(read_batch)
+
         self.menu_data = self.menu_main.addMenu("&Data")
         open_map = QAction('Map selection', self)
         self.menu_data.addAction(open_map)
+
+        self.menu_database = self.menu_main.addMenu("&DataBase")
+        menu_clear_database = QAction('Clear database', self)
+        menu_clear_database.triggered.connect(self.clear_database)
+        self.menu_database.addAction(menu_clear_database)
+        menu_export_database = QAction('Export database', self)
+        menu_export_database.triggered.connect(self.export_database)
+        self.menu_database.addAction(menu_export_database)
+
         self.show()
         self.window_FAS = FASWindow()
         self.window_FAS.hide()
@@ -610,10 +631,15 @@ class Gui(QMainWindow):
                 data_for_table = np.array([msg['Record'], '/', msg['Data'][-2]])
                 self.update_table(data_for_table)
                 self.plot_data(msg['Data'], msg['Periods'], msg['Channels'])
-            elif msg['Action'] == 'Draw record v1':
+            elif msg['Action'] == 'Draw record':
                 self.plot_data(msg['Data'], msg['Periods'], msg['Channels'])
-            elif msg['Action'] == 'Draw record obspy':
-                self.plot_data(msg['Data'], msg['Periods'], msg['Channels'])
+                if msg['P_phase'] != 0:
+                    self.x_mouse_location = msg['P_phase']
+                    self.draw_P_phase()
+                if msg['S_phase'] != 0:
+                    self.x_mouse_location = msg['S_phase']
+                    self.draw_S_phase()
+
             elif msg['Action'] == 'DrawFAS':
                 self.plot_data_FAS(msg['DataX'], msg['DataTime'])
             elif msg['Action'] == 'DrawSpectrogram':
@@ -771,7 +797,6 @@ class Gui(QMainWindow):
             for i in range(3):
                 self.fig_canvas.axes[i].grid(False)
 
-
         for i in range(len(ordinate)):
             period = float(period_all[i])
             ordinate_float = np.array(ordinate[i], dtype=np.float64)
@@ -866,7 +891,7 @@ class Gui(QMainWindow):
         for i in range(3):
             if len(data_X[i]) > 1:
                 self.window_FAS.canvas_FAS.axes_FAS[i].plot(data_X[i],
-                                                                data_Y[i])
+                                                            data_Y[i])
                 self.window_FAS.canvas_FAS.axes_FAS[i].set_xlabel(
                     'Frequency [Hz]')
                 self.window_FAS.canvas_FAS.axes_FAS[i].set_ylabel('Amplitude')
@@ -932,7 +957,7 @@ class Gui(QMainWindow):
             0].contourf(data_time, data_freq, amplitude,
                         levels=500, cmap=color_map)
 
-        #self.spec_canvas.axes_spectrogram[0].set_ylabel('Frequency [Hz]')
+        # self.spec_canvas.axes_spectrogram[0].set_ylabel('Frequency [Hz]')
         self.spec_canvas.axes_spectrogram[1].set_xlabel('Time [s]')
         self.spec_canvas.axes_spectrogram[0].set_aspect('auto')
         self.spec_canvas.axes_spectrogram[1].set_aspect('auto')
@@ -941,23 +966,27 @@ class Gui(QMainWindow):
             [0, len(self.data_abscissa[self.index_channel]) / frequency])
         self.spec_canvas.axes_spectrogram[1].set_xlim(
             [0, len(self.data_abscissa[self.index_channel]) / frequency])
-        #plt.xlim([0, len(self.data_abscissa[self.index_channel]) / frequency])
+        # plt.xlim([0, len(self.data_abscissa[self.index_channel]) / frequency])
 
         if self.P_phase_time != 0:
             self.list_lines_P_phase_spec_axes_0 += [
                 self.spec_canvas.axes_spectrogram[0].axvline(
-                    self.P_phase_time, color='green', picker=True, pickradius=1.5)]
+                    self.P_phase_time, color='green', picker=True,
+                    pickradius=1.5)]
             self.list_lines_P_phase_spec_axes_1 += [
                 self.spec_canvas.axes_spectrogram[1].axvline(
-                    self.P_phase_time, color='green', picker=True, pickradius=1.5)]
+                    self.P_phase_time, color='green', picker=True,
+                    pickradius=1.5)]
 
         if self.S_phase_time != 0:
             self.list_lines_S_phase_spec_axes_0 += [
                 self.spec_canvas.axes_spectrogram[0].axvline(
-                    self.S_phase_time, color='red', picker=True, pickradius=1.5)]
+                    self.S_phase_time, color='red', picker=True,
+                    pickradius=1.5)]
             self.list_lines_S_phase_spec_axes_1 += [
                 self.spec_canvas.axes_spectrogram[1].axvline(
-                    self.S_phase_time, color='red', picker=True, pickradius=1.5)]
+                    self.S_phase_time, color='red', picker=True,
+                    pickradius=1.5)]
 
         self.spec_canvas.fig_spectrogram.canvas.draw()
 
@@ -994,9 +1023,11 @@ class Gui(QMainWindow):
         if value_of_deleted_line == self.S_phase_time:
             self.S_phase_time = 0
             self.S_QLineEdit.setText(str(self.S_phase_time))
+            self.update_database(self.record_name, 'S_phase_time', 0)
         elif value_of_deleted_line == self.P_phase_time:
             self.P_phase_time = 0
             self.P_QLineEdit.setText(str(self.P_phase_time))
+            self.update_database(self.record_name, 'P_phase_time', 0)
 
         for i in range(len(self.list_ind_plot)):
             children = self.fig_canvas.axes[self.list_ind_plot[i]]._children
@@ -1061,11 +1092,14 @@ class Gui(QMainWindow):
                     picker=True, pickradius=1.5)]
 
         self.fig_canvas.figs.canvas.draw()
+        self.update_database(self.record_name, 'S_phase_time',
+                             self.x_mouse_location)
 
         if self.spec_canvas != None:
 
             if len(self.list_lines_S_phase_spec_axes_0) != 0:
-                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[0]._children
+                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[
+                    0]._children
                 for l in range(len(children_spectrogram_axes0)):
                     if id(children_spectrogram_axes0[l]) == \
                             id(self.list_lines_S_phase_spec_axes_0[0]):
@@ -1073,12 +1107,14 @@ class Gui(QMainWindow):
                         break
                 self.list_lines_S_phase_spec_axes_0 = []
 
-            self.list_lines_S_phase_spec_axes_0 += [self.spec_canvas.axes_spectrogram[
-                0].axvline(self.S_phase_time, color='red',
-                           picker=True, pickradius=1.5)]
+            self.list_lines_S_phase_spec_axes_0 += [
+                self.spec_canvas.axes_spectrogram[
+                    0].axvline(self.S_phase_time, color='red',
+                               picker=True, pickradius=1.5)]
 
             if len(self.list_lines_S_phase_spec_axes_1) != 0:
-                children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[1]._children
+                children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[
+                    1]._children
                 for l in range(len(children_spectrogram_axes1)):
                     if id(children_spectrogram_axes1[l]) == \
                             id(self.list_lines_S_phase_spec_axes_1[0]):
@@ -1086,11 +1122,10 @@ class Gui(QMainWindow):
                         break
                 self.list_lines_S_phase_spec_axes_1 = []
 
-            self.list_lines_S_phase_spec_axes_1 += [self.spec_canvas.axes_spectrogram[
-                1].axvline(self.S_phase_time, color='red',
-                           picker=True, pickradius=1.5)]
-
-
+            self.list_lines_S_phase_spec_axes_1 += [
+                self.spec_canvas.axes_spectrogram[
+                    1].axvline(self.S_phase_time, color='red',
+                               picker=True, pickradius=1.5)]
 
             self.spec_canvas.fig_spectrogram.canvas.draw()
 
@@ -1115,10 +1150,13 @@ class Gui(QMainWindow):
                     picker=True, pickradius=1.5)]
 
         self.fig_canvas.figs.canvas.draw()
+        self.update_database(self.record_name, 'P_phase_time',
+                             self.x_mouse_location)
 
         if self.spec_canvas != None:
             if len(self.list_lines_P_phase_spec_axes_0) != 0:
-                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[0]._children
+                children_spectrogram_axes0 = self.spec_canvas.axes_spectrogram[
+                    0]._children
                 for l in range(len(children_spectrogram_axes0)):
                     if id(children_spectrogram_axes0[l]) == \
                             id(self.list_lines_P_phase_spec_axes_0[0]):
@@ -1126,22 +1164,25 @@ class Gui(QMainWindow):
                         break
                 self.list_lines_P_phase_spec_axes_0 = []
 
-            self.list_lines_P_phase_spec_axes_0 += [self.spec_canvas.axes_spectrogram[
-                0].axvline(self.P_phase_time, color='green',
-                           picker=True, pickradius=1.5)]
+            self.list_lines_P_phase_spec_axes_0 += [
+                self.spec_canvas.axes_spectrogram[
+                    0].axvline(self.P_phase_time, color='green',
+                               picker=True, pickradius=1.5)]
 
             if len(self.list_lines_P_phase_spec_axes_1) != 0:
-                 children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[1]._children
-                 for l in range(len(children_spectrogram_axes1)):
-                     if id(children_spectrogram_axes1[l]) == \
-                             id(self.list_lines_P_phase_spec_axes_1[0]):
-                         self.spec_canvas.axes_spectrogram[1]._children.pop(l)
-                         break
-                 self.list_lines_P_phase_spec_axes_1 = []
+                children_spectrogram_axes1 = self.spec_canvas.axes_spectrogram[
+                    1]._children
+                for l in range(len(children_spectrogram_axes1)):
+                    if id(children_spectrogram_axes1[l]) == \
+                            id(self.list_lines_P_phase_spec_axes_1[0]):
+                        self.spec_canvas.axes_spectrogram[1]._children.pop(l)
+                        break
+                self.list_lines_P_phase_spec_axes_1 = []
 
-            self.list_lines_P_phase_spec_axes_1 += [self.spec_canvas.axes_spectrogram[
-                1].axvline(self.P_phase_time, color='green',
-                           picker=True, pickradius=1.5)]
+            self.list_lines_P_phase_spec_axes_1 += [
+                self.spec_canvas.axes_spectrogram[
+                    1].axvline(self.P_phase_time, color='green',
+                               picker=True, pickradius=1.5)]
 
             self.spec_canvas.fig_spectrogram.canvas.draw()
 
@@ -1209,3 +1250,25 @@ class Gui(QMainWindow):
             sys.exit()
         else:
             event.ignore()
+
+    def clear_database(self):
+        signal = {'Action': 'ClearDatabase'}
+        self.front_to_back_queue.put(signal)
+
+    def update_database(self, record, phase, value):
+        signal = {'Action': 'UpdateDatabase', 'Record': record,
+                  'Phase': phase, 'Value': value}
+        self.front_to_back_queue.put(signal)
+
+    def export_database(self):
+        file_path_export_pom = QFileDialog.getSaveFileName(self,
+                                                           'Save database to',
+                                                           r":\Users",
+                                                           "Excel file (*.xlsx);; "
+                                                           "CSV file (*.csv)")
+        if file_path_export_pom[0]:
+            signal = {'Action': 'SaveDatabase',
+                      'SavePath': file_path_export_pom[0],
+                      'Format': file_path_export_pom[1]}
+            self.front_to_back_queue.put(signal)
+

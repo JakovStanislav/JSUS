@@ -9,6 +9,8 @@ import math
 import re
 from scipy import fft, signal
 import pandas as pd
+import sqlite3
+import datetime
 
 pd.options.mode.chained_assignment = None
 
@@ -24,6 +26,7 @@ class BackendHandler:
         self.front_to_back_queue = front_to_back_queue
 
         self.extension = ['.txt', '.CLS']
+        self.connect_to_database()
 
         # self._read_thread = threading.Thread(target=self._read_loop)
         # self._read_thread.start()
@@ -83,26 +86,46 @@ class BackendHandler:
                 obs_data = np.vstack((obs_data, hstack_channel_v1_obs))
                 obs_data = obs_data.T
                 signal_out = {'Action': 'Loaded traces', 'Data': obs_data}
+
+                self.populate_database(obs_data)
                 self.back_to_front_queue.put(signal_out)
 
             elif signal['Action'] == 'OpenRecord':
                 print(signal)
+                record_name = "'" + signal['RecordPath'] + "'"
+                str_read_P_phase = \
+                    'SELECT P_phase_time FROM Time WHERE (Record = ' \
+                    + record_name + ');'
+                str_read_S_phase = str_read_P_phase.replace('P_phase_time',
+                                                            'S_phase_time')
+
+                res_P_phase = self.cur.execute(str_read_P_phase)
+                P_phase_time = res_P_phase.fetchall()  # [0][0]
+                print(P_phase_time)
+                if P_phase_time:
+                    P_phase_time = float(P_phase_time[0][0])
+                else:
+                    P_phase_time = 0.
+
+                res_S_phase = self.cur.execute(str_read_S_phase)
+                S_phase_time = res_S_phase.fetchall()
+                if S_phase_time:
+                    S_phase_time = float(S_phase_time[0][0])
+                else:
+                    S_phase_time = 0.
+
                 if signal['Extension'] == '.v1':
                     read_traces = self.read_file_v1(signal['RecordPath'])
 
-                    signal_out = {'Action': 'Draw record v1',
+                    signal_out = {'Action': 'Draw record',
                                   'Data': read_traces[:3],
                                   'Stations': read_traces[3],
                                   'Periods': read_traces[4],
-                                  'Channels': read_traces[5]}
+                                  'Channels': read_traces[5],
+                                  'P_phase': P_phase_time,
+                                  'S_phase': S_phase_time}
 
                     self.back_to_front_queue.put(signal_out)
-
-                # elif signal['Extension'] == '.txt':
-                #     signal_out = {'Action': 'Draw record txt',
-                #                   'Data': read_traces,
-                #                   'Record': signal['FileName']}
-                #     self.back_to_front_queue.put(signal_out)
 
                 else:
                     trace_ind = int(
@@ -115,10 +138,12 @@ class BackendHandler:
                                                 == trace_ind]
                     # print(df_pom['Obs_channel'])
                     read_traces = self.read_file_obspy(df_pom)
-                    signal_out = {'Action': 'Draw record obspy',
+                    signal_out = {'Action': 'Draw record',
                                   'Data': read_traces[0],
                                   'Periods': read_traces[1],
-                                  'Channels': read_traces[2]}
+                                  'Channels': read_traces[2],
+                                  'P_phase': P_phase_time,
+                                  'S_phase': S_phase_time}
 
                     self.back_to_front_queue.put(signal_out)
 
@@ -126,6 +151,13 @@ class BackendHandler:
                 self.calculate_FAS(signal['DataX'], signal['DataTime'])
             elif signal['Action'] == 'CalculateSpectrogram':
                 self.calculate_spectrogram(signal['DataX'], signal['DataTime'])
+            elif signal['Action'] == 'ClearDatabase':
+                self.clear_database()
+            elif signal['Action'] == 'UpdateDatabase':
+                self.update_database(signal['Record'], signal['Phase'],
+                                     str(signal['Value']))
+            elif signal['Action'] == 'SaveDatabase':
+                self.save_database(signal['SavePath'], signal['Format'])
 
     def read_paths(self, path, files_all):
         in_path_first = os.listdir(path)
@@ -377,3 +409,58 @@ class BackendHandler:
                       'Amplitude': amplitude_spectrogram,
                       'Frequency': record_frequency}
         self.back_to_front_queue.put(signal_out)
+
+    def connect_to_database(self):
+        self.con = sqlite3.connect("database_JSUS.db", check_same_thread=False)
+        self.cur = self.con.cursor()
+        try:
+            self.cur.execute("CREATE TABLE Time(Record, Network, Station, "
+                        "Channels, P_phase_time, S_phase_time, TimeStamp)")
+        except sqlite3.OperationalError:
+            print('Database already crated')
+
+    def clear_database(self):
+        self.cur.execute('DELETE FROM Time;',)
+        self.con.commit()
+        print('Database cleared')
+
+    def populate_database(self, data):
+        time_list = pd.date_range(0, freq='S',
+                                  periods=data.shape[0]).to_series(name='Time')
+        time_list = time_list.reset_index(drop=True)
+        time_list[:] = datetime.datetime.now()
+        time_list = np.array(time_list).reshape(len(time_list), 1)
+        data = np.hstack((data, time_list))
+        self.cur.executemany("INSERT INTO Time VALUES(?, ?, ?, ?, 0, 0, ?)",
+                             data)
+        self.con.commit()
+
+        str_remove_duplicates = 'DELETE FROM Time WHERE (Record, TimeStamp) ' \
+                                'NOT IN (SELECT Record, MIN(TimeStamp) AS ' \
+                                'min_time FROM Time GROUP BY Record);'
+        self.cur.execute(str_remove_duplicates)
+        self.con.commit()
+
+    def update_database(self, record, phase, value):
+        record_pom = "'" + record + "'"
+        phase = "'" + phase + "'"
+        str_update = 'UPDATE Time SET '
+        str_update += phase + ' = '
+        str_update += value + ' WHERE Record = '
+        str_update += record_pom + ';'
+        print(str_update)
+        self.cur.execute(str_update)
+        self.con.commit()
+
+    def save_database(self, path, extension):
+        print(path, extension)
+        sql_query = pd.read_sql('SELECT * FROM Time', self.con)
+        df_database = pd.DataFrame(sql_query,
+                                  columns=['Record', 'Network', 'Station',
+                                           'Channels', 'P_phase_time',
+                                           'S_phase_time'])
+
+        if extension == 'Excel file (*.xlsx)':
+            print('ex')
+        elif extension == 'CSV file (*.csv)':
+            print('cc')
