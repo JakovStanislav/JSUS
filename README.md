@@ -6,18 +6,13 @@
 
 JSUS works with Python 3.7 and higher.
 
-To run JSUS first clone repository:
+To install JSUS, first, you need to download the *Installing/Env_setup.bat* file from the repository by opening the terminal and typing:
 
-    git clone https://github.com/JakovStanislav/JSUS
-    
-Then run the setup.py file:
+    curl -o Env_setup.bat https://raw.githubusercontent.com/JakovStanislav/JSUS/main/Installing/Env_setup.bat --ssl-no-revoke
 
-    python setup.py install
-    
-Finally, run the main:
+After downloading the *Env_setup.bat* file run it. *Env_setup.bat* should, in the folder where the *Env_setup.bat* file is started, automatically create virtual environment and clone the git repository. All required packages will also be installed inside the new environment and the *setup.py* file will be installed.  
+After the *Env_setup.bat* file is finished run the *Run_JSUS.bat* file, which should start JSUS.
 
-    python main.py
-    
 ## Using JSUS
 The JSUS main window consists of a table (left side) that contains information on all loaded records. On the right side of the main window, there are three figures, one for each of the record´s components. Above the figures, there is a navigation toolbar that is used for navigating through the plotted data set. Also, on the right of the navigation toolbar, there are two fields that show the selected times of the **P** and **S** phases.
 
@@ -69,5 +64,10 @@ It is possible to change the colormap of the spectrogram by right-clicking over 
 </p>
 
 ### Phases picking
-In JSUS it is possible to pick **P** and **S** earthquake phases. To pick the **P** phase user needs to press `Ctrl+D` and to pick the **S** phase user needs to press `Ctrl+S` while the mouse cursor is over the appropriate position. It is also possible to delete picked phases by hovering the mouse cursor over the phase (line) you want to delete and pressing the `Middle mouse button`. Phase picking can be done on the main window and on the spectrogram window. The phase picked on one window will automatically be shown in another window. 
+In JSUS it is possible to pick **P** and **S** earthquake phases. To pick the **P** phase user needs to press `Ctrl+D` and to pick the **S** phase user needs to press `Ctrl+S` while the mouse cursor is over the appropriate position. It is also possible to delete picked phases by hovering the mouse cursor over the phase (line) you want to delete and pressing the `Middle mouse button`. Phase picking can be done on the main window and on the spectrogram window. The phase picked on one window will automatically be shown in another window.  
 
+Picked phases will automatically be saved in the database file *database_JSUS.db* which is automatically created when JSUS is started. The database file is located in the main JSUS folder. If a database file already exists data will be read from it, also if the record for which phases were already picked is drawn, phases from the database will be shown. To clear all data from *database_JSUS.db* file go to `DataBase → Clear database`, and to export the database file to Excel or CSV file go to `DataBase → Export database`.
+
+<p align="center">
+    <img src="Screenshots/DataBase.png">
+</p>
